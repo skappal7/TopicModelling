@@ -59,7 +59,7 @@ if uploaded_file is not None:
     for topic_idx, topic in enumerate(lda.components_):
         st.write(f"Topic {topic_idx + 1}:")
         top_words_idx = topic.argsort()[-5:][::-1]
-        top_words = [vectorizer.get_feature_names_out()[i] for i in top_words_idx]
+        top_words = [vectorizer.get_feature_names()[i] for i in top_words_idx]
         st.write(", ".join(top_words))
 
     # Assign topics to each document
