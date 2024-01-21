@@ -11,15 +11,6 @@ import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 
-# Attempt to install wordcloud if not already installed
-try:
-    from wordcloud import WordCloud
-except ModuleNotFoundError:
-    st.warning("WordCloud library not found. Attempting to install...")
-    import subprocess
-    subprocess.check_call(["pip", "install", "wordcloud"])
-    from wordcloud import WordCloud
-
 # Logo embedded in the source code
 logo_url = "https://humach.com/wp-content/uploads/2023/01/HuMach_logo-bold.png"  # Replace with your logo URL or embed the logo directly
 
@@ -70,10 +61,6 @@ if uploaded_file is not None:
         top_words_idx = topic.argsort()[-5:][::-1]
         top_words = [vectorizer.get_feature_names_out()[i] for i in top_words_idx]
         st.write(", ".join(top_words))
-
-        # Generate and display word cloud for each topic
-        wordcloud = WordCloud(width=800, height=400, background_color="white").generate(" ".join(top_words))
-        st.image(wordcloud.to_array(), caption=f"Word Cloud for Topic {topic_idx + 1}", use_column_width=True)
 
     # Assign topics to each document
     df['Topic'] = lda.transform(X).argmax(axis=1)
