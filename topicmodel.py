@@ -24,7 +24,7 @@ st.title("Text Analyser")
 st.subheader("Developer: Sunil Kappal")
 
 # Display logo at the top right-hand side
-st.image(logo_url, caption='App Logo', width=100, use_column_width=False, output_format='auto')
+st.image(logo_url, width=100, use_column_width=False, output_format='auto')
 
 # Upload file for analysis
 uploaded_file = st.file_uploader("Upload CSV or Text file for analysis", type=["csv", "txt"])
@@ -61,7 +61,7 @@ if uploaded_file is not None:
     for topic_idx, topic in enumerate(lda.components_):
         st.write(f"Topic {topic_idx + 1}:")
         top_words_idx = topic.argsort()[-5:][::-1]
-        top_words = [CountVectorizer().get_feature_names_out()[i] for i in top_words_idx]
+        top_words = [vectorizer.get_feature_names()[i] for i in top_words_idx]
         st.write(", ".join(top_words))
 
     # Assign topics to each document
