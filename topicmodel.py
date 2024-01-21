@@ -53,7 +53,11 @@ if uploaded_file is not None:
 
     # Topic Modelling using scikit-learn's LatentDirichletAllocation
     text_column_name = st.selectbox("Select the column containing text data", df.columns)
-    X = CountVectorizer().fit_transform(df[text_column_name])
+    
+    # Fit CountVectorizer to the text data
+    vectorizer = CountVectorizer()
+    X = vectorizer.fit_transform(df[text_column_name])
+
     lda = LatentDirichletAllocation(n_components=num_topics, random_state=42)
     lda.fit(X)
 
@@ -61,7 +65,7 @@ if uploaded_file is not None:
     for topic_idx, topic in enumerate(lda.components_):
         st.write(f"Topic {topic_idx + 1}:")
         top_words_idx = topic.argsort()[-5:][::-1]
-        top_words = [CountVectorizer().get_feature_names()[i] for i in top_words_idx]
+        top_words = [vectorizer.get_feature_names()[i] for i in top_words_idx]
         st.write(", ".join(top_words))
 
     # Assign topics to each document
