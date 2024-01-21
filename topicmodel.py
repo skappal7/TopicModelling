@@ -70,5 +70,10 @@ if uploaded_file is not None:
 
     # Assign topics to each document
     df['Topic'] = lda.transform(X).argmax(axis=1)
-    st.write("Assigned Topics:")
-    st.dataframe(df[['Text', 'Topic']])
+    
+    # Display 'Text' and 'Topic' columns if they exist
+    if 'Text' in df.columns and 'Topic' in df.columns:
+        st.write("Assigned Topics:")
+        st.dataframe(df[['Text', 'Topic']])
+    else:
+        st.warning("Please check your data processing steps. 'Text' and 'Topic' columns not found in the DataFrame.")
