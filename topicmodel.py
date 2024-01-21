@@ -10,8 +10,8 @@ Original file is located at
 import streamlit as st
 import pandas as pd
 from PIL import Image
-from io import BytesIO
 import requests
+from io import BytesIO
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 
@@ -22,11 +22,16 @@ st.set_page_config(page_title="Text Analyser", page_icon=":pencil:")
 st.title("Text Analyser")
 st.subheader("Developer: Sunil Kappal")
 
-# Upload logo from URL
-logo_url = st.text_input("Upload Logo URL:")
-if logo_url:
-    logo = Image.open(BytesIO(requests.get("https://humach.com/wp-content/uploads/2023/01/HuMach_logo-bold.png").content))
+# Default logo URL (you can customize it or provide a default logo URL)
+default_logo_url = "https://humach.com/wp-content/uploads/2023/01/HuMach_logo-bold.png"
+logo_url = st.text_input("Upload Logo URL:", value=default_logo_url)
+
+# Load logo from URL
+try:
+    logo = Image.open(BytesIO(requests.get(logo_url).content))
     st.image(logo, caption='Uploaded Logo', use_column_width=True)
+except Exception as e:
+    st.warning("Error loading the logo. Please check the URL or use the default logo.")
 
 # Upload file for analysis
 uploaded_file = st.file_uploader("Upload CSV or Text file for analysis", type=["csv", "txt"])
@@ -54,8 +59,8 @@ if uploaded_file is not None:
     num_topics = st.slider("Select the number of topics", min_value=2, max_value=10, value=4)
 
     # Topic Modelling using scikit-learn's LatentDirichletAllocation
-    vectorizer = CountVectorizer()
-    X = vectorizer.fit_transform(df['Text'])
+    text_column_name = st.selectbox("Select the column containing text data", df.columns)
+    X = CountVectorizer().fit_transform(df[text_column_name])
     lda = LatentDirichletAllocation(n_components=num_topics, random_state=42)
     lda.fit(X)
 
@@ -70,4 +75,3 @@ if uploaded_file is not None:
     df['Topic'] = lda.transform(X).argmax(axis=1)
     st.write("Assigned Topics:")
     st.dataframe(df[['Text', 'Topic']])
-
