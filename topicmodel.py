@@ -9,7 +9,6 @@ Original file is located at
 
 import streamlit as st
 import pandas as pd
-from PIL import Image
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 
@@ -70,10 +69,16 @@ if uploaded_file is not None:
 
     # Assign topics to each document
     df['Topic'] = lda.transform(X).argmax(axis=1)
-    
+
     # Display 'Text' and 'Topic' columns if they exist
     if 'Text' in df.columns and 'Topic' in df.columns:
         st.write("Assigned Topics:")
         st.dataframe(df[['Text', 'Topic']])
+
+        # Visualize the distribution of topics
+        st.header("Topic Distribution:")
+        topic_distribution = df['Topic'].value_counts()
+        st.bar_chart(topic_distribution)
+
     else:
         st.warning("Please check your data processing steps. 'Text' and 'Topic' columns not found in the DataFrame.")
