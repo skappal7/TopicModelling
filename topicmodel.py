@@ -30,7 +30,6 @@ st.image(logo_url, width=100, use_column_width=False, output_format='auto')
 uploaded_file = st.file_uploader("Upload CSV or Text file for analysis", type=["csv", "txt"])
 
 # Install wordcloud library
-!pip install wordcloud
 
 if uploaded_file is not None:
     # Read the file
