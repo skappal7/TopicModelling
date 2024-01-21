@@ -10,10 +10,11 @@ Original file is located at
 import streamlit as st
 import pandas as pd
 from PIL import Image
-import requests
-from io import BytesIO
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
+
+# Logo embedded in the source code
+logo_url = "https://humach.com/wp-content/uploads/2023/01/HuMach_logo-bold.png"  # Replace with your logo URL or embed the logo directly
 
 # Set page title and icon
 st.set_page_config(page_title="Text Analyser", page_icon=":pencil:")
@@ -22,16 +23,8 @@ st.set_page_config(page_title="Text Analyser", page_icon=":pencil:")
 st.title("Text Analyser")
 st.subheader("Developer: Sunil Kappal")
 
-# Default logo URL (you can customize it or provide a default logo URL)
-default_logo_url = "https://humach.com/wp-content/uploads/2023/01/HuMach_logo-bold.png"
-logo_url = st.text_input("Upload Logo URL:", value=default_logo_url)
-
-# Load logo from URL
-try:
-    logo = Image.open(BytesIO(requests.get(logo_url).content))
-    st.image(logo, caption='Uploaded Logo', use_column_width=True)
-except Exception as e:
-    st.warning("Error loading the logo. Please check the URL or use the default logo.")
+# Display logo at the top right-hand side
+st.image(logo_url, caption='App Logo', width=100, use_column_width=False, output_format='auto')
 
 # Upload file for analysis
 uploaded_file = st.file_uploader("Upload CSV or Text file for analysis", type=["csv", "txt"])
@@ -68,7 +61,7 @@ if uploaded_file is not None:
     for topic_idx, topic in enumerate(lda.components_):
         st.write(f"Topic {topic_idx + 1}:")
         top_words_idx = topic.argsort()[-5:][::-1]
-        top_words = [vectorizer.get_feature_names_out()[i] for i in top_words_idx]
+        top_words = [CountVectorizer().get_feature_names_out()[i] for i in top_words_idx]
         st.write(", ".join(top_words))
 
     # Assign topics to each document
