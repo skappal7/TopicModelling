@@ -11,6 +11,8 @@ import streamlit as st
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
+from wordcloud import WordCloud
+import matplotlib.pyplot as plt
 
 # Logo embedded in the source code
 logo_url = "https://humach.com/wp-content/uploads/2023/01/HuMach_logo-bold.png"  # Replace with your logo URL or embed the logo directly
@@ -42,10 +44,6 @@ if uploaded_file is not None:
     st.write("Uploaded Data:")
     st.dataframe(df)
 
-    # Perform text analytics
-    st.header("Text Analytics:")
-    # Add your text analytics code here using libraries like TextBlob, NLTK, etc.
-
     # Perform topic modelling
     st.header("Topic Modelling:")
     num_topics = st.slider("Select the number of topics", min_value=2, max_value=10, value=4)
@@ -64,8 +62,12 @@ if uploaded_file is not None:
     for topic_idx, topic in enumerate(lda.components_):
         st.write(f"Topic {topic_idx + 1}:")
         top_words_idx = topic.argsort()[-5:][::-1]
-        top_words = [vectorizer.get_feature_names()[i] for i in top_words_idx]
+        top_words = [vectorizer.get_feature_names_out()[i] for i in top_words_idx]
         st.write(", ".join(top_words))
+
+        # Generate and display word cloud for each topic
+        wordcloud = WordCloud(width=800, height=400, background_color="white").generate(" ".join(top_words))
+        st.image(wordcloud.to_array(), caption=f"Word Cloud for Topic {topic_idx + 1}", use_column_width=True)
 
     # Assign topics to each document
     df['Topic'] = lda.transform(X).argmax(axis=1)
