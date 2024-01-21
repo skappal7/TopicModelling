@@ -10,8 +10,15 @@ import streamlit as st
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
-from wordcloud import WordCloud
-import matplotlib.pyplot as plt
+
+# Attempt to install wordcloud if not already installed
+try:
+    from wordcloud import WordCloud
+except ModuleNotFoundError:
+    st.warning("WordCloud library not found. Attempting to install...")
+    import subprocess
+    subprocess.check_call(["pip", "install", "wordcloud"])
+    from wordcloud import WordCloud
 
 # Logo embedded in the source code
 logo_url = "https://humach.com/wp-content/uploads/2023/01/HuMach_logo-bold.png"  # Replace with your logo URL or embed the logo directly
@@ -28,8 +35,6 @@ st.image(logo_url, width=100, use_column_width=False, output_format='auto')
 
 # Upload file for analysis
 uploaded_file = st.file_uploader("Upload CSV or Text file for analysis", type=["csv", "txt"])
-
-# Install wordcloud library
 
 if uploaded_file is not None:
     # Read the file
