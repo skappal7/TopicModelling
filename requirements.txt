@@ -4,4 +4,4 @@ numpy
 scikit-learn
 gensim
 pyLDAvis
-scipy
+scipy==1.11.3
