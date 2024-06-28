@@ -4,13 +4,15 @@ import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 import pyLDAvis
+import pyLDAvis.sklearn
 import tempfile
 import base64
 
-# ... (previous code remains the same) ...
-
+# File upload
+uploaded_file = st.file_uploader("Upload a CSV file", type="csv")
 if uploaded_file is not None:
-    # ... (previous code remains the same) ...
+    df = pd.read_csv(uploaded_file)
+    st.write(df.head())
 
     # Perform topic modelling
     st.header("Topic Modelling:")
@@ -37,9 +39,9 @@ if uploaded_file is not None:
     df['Topic'] = lda_output.argmax(axis=1)
 
     # Display 'Text' and 'Topic' columns if they exist
-    if 'Text' in df.columns and 'Topic' in df.columns:
+    if text_column_name in df.columns and 'Topic' in df.columns:
         st.write("Assigned Topics:")
-        st.dataframe(df[['Text', 'Topic']])
+        st.dataframe(df[[text_column_name, 'Topic']])
 
         # Visualize the distribution of topics
         st.header("Topic Distribution:")
@@ -50,20 +52,7 @@ if uploaded_file is not None:
         st.header("PyLDAvis Visualization:")
         
         # Prepare the visualization
-        feature_names = vectorizer.get_feature_names_out()
-        doc_lengths = X.sum(axis=1).getA1()
-        vocab = feature_names
-        term_frequency = X.sum(axis=0).getA1()
-
-        # Create and save the visualization
-        data = pyLDAvis.prepare(
-            topic_word_distrib=lda.components_,
-            doc_topic_distrib=lda_output,
-            doc_lengths=doc_lengths,
-            vocab=vocab,
-            term_frequency=term_frequency,
-            sort_topics=False
-        )
+        data = pyLDAvis.sklearn.prepare(lda, X, vectorizer, sort_topics=False)
         
         # Save the visualization to a temporary HTML file
         with tempfile.NamedTemporaryFile(delete=False, suffix='.html') as tmpfile:
