@@ -5,6 +5,7 @@ from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 import plotly.express as px
 import plotly.graph_objects as go
+from sklearn.manifold import MDS
 
 # File upload
 uploaded_file = st.file_uploader("Upload a CSV file", type="csv")
@@ -50,7 +51,7 @@ if uploaded_file is not None:
                  title='Distribution of Topics')
     st.plotly_chart(fig)
 
-    # Interactive topic visualization (similar to pyLDAvis)
+    # Interactive topic visualization
     st.header("Interactive Topic Visualization:")
     
     # Prepare data for visualization
@@ -61,24 +62,23 @@ if uploaded_file is not None:
     term_frequency = doc_term_matrix.sum(axis=0).A1
 
     # MDS projection
-    from sklearn.manifold import MDS
     mds = MDS(n_components=2, random_state=42)
     topic_coordinates = mds.fit_transform(topic_term_dists)
 
-# Create scatter plot for topics
-trace1 = go.Scatter(
-    x=topic_coordinates[:, 0],
-    y=topic_coordinates[:, 1],
-    mode='markers',
-    marker=dict(
-        size=15, 
-        color=[i for i in range(num_topics)],  # Use a list comprehension instead of range
-        colorscale='Viridis', 
-        showscale=True
-    ),
-    text=[f'Topic {i+1}' for i in range(num_topics)],
-    hoverinfo='text'
-)
+    # Create scatter plot for topics
+    trace1 = go.Scatter(
+        x=topic_coordinates[:, 0],
+        y=topic_coordinates[:, 1],
+        mode='markers',
+        marker=dict(
+            size=15, 
+            color=[i for i in range(num_topics)],
+            colorscale='Viridis', 
+            showscale=True
+        ),
+        text=[f'Topic {i+1}' for i in range(num_topics)],
+        hoverinfo='text'
+    )
 
     layout = go.Layout(
         title='Topic Visualization',
