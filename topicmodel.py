@@ -1,14 +1,14 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
-from gensim import corpora, models
-import pyLDAvis
-import pyLDAvis.gensim_models
-import tempfile
-import base64
+from sklearn.decomposition import LatentDirichletAllocation
+import plotly.express as px
+import plotly.graph_objects as go
 
 # File upload
 uploaded_file = st.file_uploader("Upload a CSV file", type="csv")
+
 if uploaded_file is not None:
     df = pd.read_csv(uploaded_file)
     st.write(df.head())
@@ -17,55 +17,80 @@ if uploaded_file is not None:
     st.header("Topic Modelling:")
     num_topics = st.slider("Select the number of topics", min_value=2, max_value=10, value=4)
 
-    # Topic Modelling using Gensim's LatentDirichletAllocation
+    # Select text column
     text_column_name = st.selectbox("Select the column containing text data", df.columns)
 
     # Preprocess the text data
-    texts = df[text_column_name].astype(str).apply(lambda x: x.split())
+    vectorizer = CountVectorizer(max_df=0.95, min_df=2, stop_words='english')
+    doc_term_matrix = vectorizer.fit_transform(df[text_column_name].astype(str))
 
-    # Create a dictionary and corpus for Gensim
-    dictionary = corpora.Dictionary(texts)
-    corpus = [dictionary.doc2bow(text) for text in texts]
-
-    # Train the LDA model using Gensim
-    lda = models.LdaModel(corpus, num_topics=num_topics, id2word=dictionary, random_state=42)
+    # Train the LDA model
+    lda = LatentDirichletAllocation(n_components=num_topics, random_state=42)
+    lda.fit(doc_term_matrix)
 
     # Display topic modelling results
-    for topic_idx in range(num_topics):
-        st.write(f"Topic {topic_idx + 1}:")
-        st.write(", ".join([word for word, prob in lda.show_topic(topic_idx, topn=5)]))
+    feature_names = vectorizer.get_feature_names_out()
+    for topic_idx, topic in enumerate(lda.components_):
+        top_words = [feature_names[i] for i in topic.argsort()[:-5 - 1:-1]]
+        st.write(f"Topic {topic_idx + 1}: {', '.join(top_words)}")
 
     # Assign topics to each document
-    doc_topics = [max(doc, key=lambda x: x[1])[0] for doc in lda[corpus]]
-    df['Topic'] = doc_topics
+    doc_topics = lda.transform(doc_term_matrix)
+    df['Topic'] = doc_topics.argmax(axis=1)
 
-    # Display 'Text' and 'Topic' columns if they exist
-    if text_column_name in df.columns and 'Topic' in df.columns:
-        st.write("Assigned Topics:")
-        st.dataframe(df[[text_column_name, 'Topic']])
+    # Display 'Text' and 'Topic' columns
+    st.write("Assigned Topics:")
+    st.dataframe(df[[text_column_name, 'Topic']])
 
-        # Visualize the distribution of topics
-        st.header("Topic Distribution:")
-        topic_distribution = df['Topic'].value_counts()
-        st.bar_chart(topic_distribution)
+    # Visualize the distribution of topics
+    st.header("Topic Distribution:")
+    topic_distribution = df['Topic'].value_counts().sort_index()
+    fig = px.bar(x=topic_distribution.index, y=topic_distribution.values,
+                 labels={'x': 'Topic', 'y': 'Count'},
+                 title='Distribution of Topics')
+    st.plotly_chart(fig)
 
-        # PyLDAvis visualization
-        st.header("PyLDAvis Visualization:")
+    # Interactive topic visualization (similar to pyLDAvis)
+    st.header("Interactive Topic Visualization:")
+    
+    # Prepare data for visualization
+    topic_term_dists = lda.components_ / lda.components_.sum(axis=1)[:, np.newaxis]
+    doc_topic_dists = doc_topics / doc_topics.sum(axis=1)[:, np.newaxis]
+    doc_lengths = doc_term_matrix.sum(axis=1).A1
+    vocab = vectorizer.get_feature_names_out()
+    term_frequency = doc_term_matrix.sum(axis=0).A1
 
-        # Prepare the data for PyLDAvis
-        vis_data = pyLDAvis.gensim_models.prepare(lda, corpus, dictionary)
+    # MDS projection
+    from sklearn.manifold import MDS
+    mds = MDS(n_components=2, random_state=42)
+    topic_coordinates = mds.fit_transform(topic_term_dists)
 
-        # Save the visualization to a temporary HTML file
-        with tempfile.NamedTemporaryFile(delete=False, suffix='.html') as tmpfile:
-            pyLDAvis.save_html(vis_data, tmpfile.name)
-            
-            # Read the HTML file and encode it
-            with open(tmpfile.name, 'rb') as f:
-                html_bytes = f.read()
-            encoded = base64.b64encode(html_bytes).decode()
-            
-        # Display the visualization in an iframe
-        st.components.v1.html(f'<iframe src="data:text/html;base64,{encoded}" width="100%" height="800px"></iframe>', height=800)
+    # Create scatter plot for topics
+    trace1 = go.Scatter(
+        x=topic_coordinates[:, 0],
+        y=topic_coordinates[:, 1],
+        mode='markers',
+        marker=dict(size=15, color=range(num_topics), colorscale='Viridis', showscale=True),
+        text=[f'Topic {i+1}' for i in range(num_topics)],
+        hoverinfo='text'
+    )
 
-    else:
-        st.warning("Please check your data processing steps. 'Text' and 'Topic' columns not found in the DataFrame.")
+    layout = go.Layout(
+        title='Topic Visualization',
+        xaxis=dict(title='First Dimension'),
+        yaxis=dict(title='Second Dimension'),
+        showlegend=False
+    )
+
+    fig = go.Figure(data=[trace1], layout=layout)
+    st.plotly_chart(fig)
+
+    # Display top terms for selected topic
+    selected_topic = st.selectbox("Select a topic to see top terms:", range(num_topics))
+    top_terms = [vocab[i] for i in topic_term_dists[selected_topic].argsort()[:-10 - 1:-1]]
+    term_strengths = topic_term_dists[selected_topic][topic_term_dists[selected_topic].argsort()[:-10 - 1:-1]]
+
+    term_fig = px.bar(x=top_terms, y=term_strengths, 
+                      labels={'x': 'Term', 'y': 'Strength'},
+                      title=f'Top 10 Terms in Topic {selected_topic + 1}')
+    st.plotly_chart(term_fig)
