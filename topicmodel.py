@@ -2,8 +2,9 @@ import streamlit as st
 import pandas as pd
 import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
-from sklearn.decomposition import LatentDirichletAllocation
+from gensim import corpora, models
 import pyLDAvis
+import pyLDAvis.gensim_models
 import tempfile
 import base64
 
@@ -17,25 +18,27 @@ if uploaded_file is not None:
     st.header("Topic Modelling:")
     num_topics = st.slider("Select the number of topics", min_value=2, max_value=10, value=4)
 
-    # Topic Modelling using scikit-learn's LatentDirichletAllocation
+    # Topic Modelling using Gensim's LatentDirichletAllocation
     text_column_name = st.selectbox("Select the column containing text data", df.columns)
 
-    # Fit CountVectorizer to the text data
-    vectorizer = CountVectorizer()
-    X = vectorizer.fit_transform(df[text_column_name])
+    # Preprocess the text data
+    texts = df[text_column_name].astype(str).apply(lambda x: x.split())
 
-    lda = LatentDirichletAllocation(n_components=num_topics, random_state=42)
-    lda_output = lda.fit_transform(X)
+    # Create a dictionary and corpus for Gensim
+    dictionary = corpora.Dictionary(texts)
+    corpus = [dictionary.doc2bow(text) for text in texts]
+
+    # Train the LDA model using Gensim
+    lda = models.LdaModel(corpus, num_topics=num_topics, id2word=dictionary, random_state=42)
 
     # Display topic modelling results
-    for topic_idx, topic in enumerate(lda.components_):
+    for topic_idx in range(num_topics):
         st.write(f"Topic {topic_idx + 1}:")
-        top_words_idx = topic.argsort()[-5:][::-1]
-        top_words = [vectorizer.get_feature_names_out()[i] for i in top_words_idx]
-        st.write(", ".join(top_words))
+        st.write(", ".join([word for word, prob in lda.show_topic(topic_idx, topn=5)]))
 
     # Assign topics to each document
-    df['Topic'] = lda_output.argmax(axis=1)
+    doc_topics = [max(doc, key=lambda x: x[1])[0] for doc in lda[corpus]]
+    df['Topic'] = doc_topics
 
     # Display 'Text' and 'Topic' columns if they exist
     if text_column_name in df.columns and 'Topic' in df.columns:
@@ -51,17 +54,11 @@ if uploaded_file is not None:
         st.header("PyLDAvis Visualization:")
 
         # Prepare the data for PyLDAvis
-        prepared_data = pyLDAvis.prepare(
-            topic_term_dists=lda.components_,
-            doc_topic_dists=lda_output,
-            doc_lengths=[len(doc) for doc in df[text_column_name]],
-            vocab=vectorizer.get_feature_names_out(),
-            term_frequency=X.toarray().sum(axis=0)
-        )
+        vis_data = pyLDAvis.gensim_models.prepare(lda, corpus, dictionary)
 
         # Save the visualization to a temporary HTML file
         with tempfile.NamedTemporaryFile(delete=False, suffix='.html') as tmpfile:
-            pyLDAvis.save_html(prepared_data, tmpfile.name)
+            pyLDAvis.save_html(vis_data, tmpfile.name)
             
             # Read the HTML file and encode it
             with open(tmpfile.name, 'rb') as f:
