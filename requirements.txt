@@ -4,3 +4,4 @@ numpy
 scikit-learn
 gensim
 pyLDAvis
+scipy
