@@ -1,9 +1,6 @@
 streamlit
 pandas
-Pillow
-requests
+numpy
 scikit-learn
-textblob
-wordcloud
-pyLDAvis
 gensim
+pyLDAvis
