@@ -4,8 +4,7 @@ import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 import pyLDAvis
-import pyLDAvis.prepare
-import pyLDAvis.save_html
+import pyLDAvis.gensim_models
 import tempfile
 import base64
 
@@ -53,18 +52,11 @@ if uploaded_file is not None:
         st.header("PyLDAvis Visualization:")
         
         # Prepare the data for PyLDAvis
-        data = {
-            'topic_term_dists': lda.components_,
-            'doc_topic_dists': lda_output,
-            'doc_lengths': [len(doc) for doc in df[text_column_name]],
-            'vocab': vectorizer.get_feature_names_out(),
-            'term_frequency': X.toarray().sum(axis=0)
-        }
-        vis_data = pyLDAvis.prepare(**data)
+        data = pyLDAvis.prepare(lda, X, vectorizer, sort_topics=False)
         
         # Save the visualization to a temporary HTML file
         with tempfile.NamedTemporaryFile(delete=False, suffix='.html') as tmpfile:
-            pyLDAvis.save_html(vis_data, tmpfile.name)
+            pyLDAvis.save_html(data, tmpfile.name)
             
             # Read the HTML file and encode it
             with open(tmpfile.name, 'rb') as f:
