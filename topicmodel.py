@@ -1,9 +1,9 @@
 import streamlit as st
 import pandas as pd
+import numpy as np
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
 import pyLDAvis
-import pyLDAvis.sklearn
 import tempfile
 import base64
 
@@ -24,7 +24,7 @@ if uploaded_file is not None:
     X = vectorizer.fit_transform(df[text_column_name])
 
     lda = LatentDirichletAllocation(n_components=num_topics, random_state=42)
-    lda.fit(X)
+    lda_output = lda.fit_transform(X)
 
     # Display topic modelling results
     for topic_idx, topic in enumerate(lda.components_):
@@ -34,7 +34,7 @@ if uploaded_file is not None:
         st.write(", ".join(top_words))
 
     # Assign topics to each document
-    df['Topic'] = lda.transform(X).argmax(axis=1)
+    df['Topic'] = lda_output.argmax(axis=1)
 
     # Display 'Text' and 'Topic' columns if they exist
     if 'Text' in df.columns and 'Topic' in df.columns:
@@ -50,11 +50,24 @@ if uploaded_file is not None:
         st.header("PyLDAvis Visualization:")
         
         # Prepare the visualization
-        pyLDAvis_data = pyLDAvis.sklearn.prepare(lda, X, vectorizer, mds='tsne')
+        feature_names = vectorizer.get_feature_names_out()
+        doc_lengths = X.sum(axis=1).getA1()
+        vocab = feature_names
+        term_frequency = X.sum(axis=0).getA1()
+
+        # Create and save the visualization
+        data = pyLDAvis.prepare(
+            topic_word_distrib=lda.components_,
+            doc_topic_distrib=lda_output,
+            doc_lengths=doc_lengths,
+            vocab=vocab,
+            term_frequency=term_frequency,
+            sort_topics=False
+        )
         
         # Save the visualization to a temporary HTML file
         with tempfile.NamedTemporaryFile(delete=False, suffix='.html') as tmpfile:
-            pyLDAvis.save_html(pyLDAvis_data, tmpfile.name)
+            pyLDAvis.save_html(data, tmpfile.name)
             
             # Read the HTML file and encode it
             with open(tmpfile.name, 'rb') as f:
