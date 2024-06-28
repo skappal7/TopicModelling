@@ -65,15 +65,20 @@ if uploaded_file is not None:
     mds = MDS(n_components=2, random_state=42)
     topic_coordinates = mds.fit_transform(topic_term_dists)
 
-    # Create scatter plot for topics
-    trace1 = go.Scatter(
-        x=topic_coordinates[:, 0],
-        y=topic_coordinates[:, 1],
-        mode='markers',
-        marker=dict(size=15, color=range(num_topics), colorscale='Viridis', showscale=True),
-        text=[f'Topic {i+1}' for i in range(num_topics)],
-        hoverinfo='text'
-    )
+# Create scatter plot for topics
+trace1 = go.Scatter(
+    x=topic_coordinates[:, 0],
+    y=topic_coordinates[:, 1],
+    mode='markers',
+    marker=dict(
+        size=15, 
+        color=[i for i in range(num_topics)],  # Use a list comprehension instead of range
+        colorscale='Viridis', 
+        showscale=True
+    ),
+    text=[f'Topic {i+1}' for i in range(num_topics)],
+    hoverinfo='text'
+)
 
     layout = go.Layout(
         title='Topic Visualization',
