@@ -2,36 +2,15 @@ import streamlit as st
 import pandas as pd
 from sklearn.feature_extraction.text import CountVectorizer
 from sklearn.decomposition import LatentDirichletAllocation
+import pyLDAvis
+import pyLDAvis.sklearn
+import tempfile
+import base64
 
-# Logo embedded in the source code
-logo_url = "https://humach.com/wp-content/uploads/2023/01/HuMach_logo-bold.png"  # Replace with your logo URL or embed the logo directly
-
-# Set page title and icon
-st.set_page_config(page_title="Text Analyser", page_icon=":pencil:")
-
-# Set app name and subheading
-st.title("Text Analyser")
-st.subheader("Developer: Sunil Kappal")
-
-# Display logo at the top right-hand side
-st.image(logo_url, width=100, use_column_width=False, output_format='auto')
-
-# Upload file for analysis
-uploaded_file = st.file_uploader("Upload CSV or Text file for analysis", type=["csv", "txt"])
+# ... (previous code remains the same) ...
 
 if uploaded_file is not None:
-    # Read the file
-    if uploaded_file.name.endswith('.csv'):
-        df = pd.read_csv(uploaded_file)
-    elif uploaded_file.name.endswith('.txt'):
-        df = pd.DataFrame({'Text': uploaded_file.readlines()})
-    else:
-        st.error("Invalid file format. Please upload a CSV or Text file.")
-        st.stop()
-
-    # Display uploaded data
-    st.write("Uploaded Data:")
-    st.dataframe(df)
+    # ... (previous code remains the same) ...
 
     # Perform topic modelling
     st.header("Topic Modelling:")
@@ -66,5 +45,24 @@ if uploaded_file is not None:
         st.header("Topic Distribution:")
         topic_distribution = df['Topic'].value_counts()
         st.bar_chart(topic_distribution)
+
+        # PyLDAvis visualization
+        st.header("PyLDAvis Visualization:")
+        
+        # Prepare the visualization
+        pyLDAvis_data = pyLDAvis.sklearn.prepare(lda, X, vectorizer, mds='tsne')
+        
+        # Save the visualization to a temporary HTML file
+        with tempfile.NamedTemporaryFile(delete=False, suffix='.html') as tmpfile:
+            pyLDAvis.save_html(pyLDAvis_data, tmpfile.name)
+            
+            # Read the HTML file and encode it
+            with open(tmpfile.name, 'rb') as f:
+                html_bytes = f.read()
+            encoded = base64.b64encode(html_bytes).decode()
+            
+        # Display the visualization in an iframe
+        st.components.v1.html(f'<iframe src="data:text/html;base64,{encoded}" width="100%" height="800px"></iframe>', height=800)
+
     else:
         st.warning("Please check your data processing steps. 'Text' and 'Topic' columns not found in the DataFrame.")
